@@ -67,6 +67,34 @@ input.rename {
   text-align: center; border-radius: 4px; opacity: .6;
 }
 .tab .close:hover { opacity: 1; background: rgba(128,128,128,.3); }
+/* Renaming used to be a hidden double-click; show the handle on hover instead. */
+.tab .pencil {
+  flex: 0 0 auto; width: 16px; height: 16px; line-height: 16px;
+  text-align: center; border-radius: 4px; opacity: 0; font-size: 11px;
+}
+.tab:hover .pencil { opacity: .6; }
+.tab .pencil:hover { opacity: 1; background: rgba(128,128,128,.3); }
+.addressbar .rename-btn { font-size: 12px; }
+.session-item.hidden-item { opacity: .45; }
+.sidebar .btn.on { background: var(--accent); color: #fff; }
+
+/* right-click menu */
+.ctxmenu {
+  position: fixed; z-index: 999; min-width: 190px; padding: 4px;
+  background: var(--vscode-menu-background, #252526);
+  color: var(--vscode-menu-foreground, #ccc);
+  border: 1px solid var(--vscode-menu-border, rgba(128,128,128,.35));
+  border-radius: 7px; box-shadow: 0 6px 22px rgba(0,0,0,.45);
+  font-size: 12px; user-select: none;
+}
+.ctxmenu .mi { padding: 6px 10px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+.ctxmenu .mi:hover {
+  background: var(--vscode-menu-selectionBackground, #04395e);
+  color: var(--vscode-menu-selectionForeground, #fff);
+}
+.ctxmenu .mi.danger { color: #e5534b; }
+.ctxmenu .mi.danger:hover { background: #e5534b; color: #fff; }
+.ctxmenu .sep { height: 1px; margin: 4px 6px; background: rgba(128,128,128,.3); }
 .tab .newtab {
   min-width: auto; padding: 7px 11px; color: var(--muted);
 }

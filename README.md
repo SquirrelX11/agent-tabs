@@ -26,7 +26,9 @@ The optional "continue in Claude Code" button additionally needs the **Claude Co
 - ⌨️ **Quick access** — `Cmd+Alt+A`, the status bar, or the button next to the Claude icon all open the panel. `Cmd+Alt+Shift+A` gives you a `Cmd+P`-style picker instead, bookmarks first.
 - ▶ **Back into the real chat** — picking a chat opens the live Claude Code conversation, so you can carry on where you left off.
 - 🔦 **Find in chat** — `Cmd+F` inside a chat, with match count and Enter/Shift+Enter to step through hits.
-- ✏️ **Rename tabs** — double-click a tab and call it what you want; your name overrides Claude's generated title everywhere. Clear it to get the original back.
+- ✏️ **Rename chats** — press the ✎ on a tab, `✎ rename` in the address bar, or double-click. Your name overrides Claude's generated title everywhere in Agent Tabs; clear it to get the original back. Names live in this extension only — your Claude Code history files are never touched.
+- 🖱 **Right-click anything** — tabs, chats in the list and bookmarks all open a context menu: rename, bookmark, close, hide or delete.
+- 🙈 **Hide or delete chats** — hide clutter from the list (reversible — bring it back with 👁), or delete a chat for good: it asks first, then moves the session file to the Trash.
 - 🤖 **Automatic titles** — taken from the `ai-title` that Claude Code generates itself.
 - 🛠 **Readable transcript** — internal tool results don't pose as your messages; tool calls collapse into compact chips.
 - ↗ **Quick actions** — open the project folder in a new window, reveal the `.jsonl` in your file manager.

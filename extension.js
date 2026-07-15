@@ -204,6 +204,7 @@ async function handleMessage(context, msg) {
         bookmarks: context.globalState.get('bookmarks', []),
         active: context.globalState.get('activeTab', ''),
         titles: context.globalState.get('titles', {}),
+        hidden: context.globalState.get('hidden', []),
       });
       await sendSessions();
       // A chat picked while the panel was still booting — open it now.
@@ -232,6 +233,34 @@ async function handleMessage(context, msg) {
       if (Array.isArray(msg.bookmarks)) context.globalState.update('bookmarks', msg.bookmarks);
       if (typeof msg.active === 'string') context.globalState.update('activeTab', msg.active);
       if (msg.titles && typeof msg.titles === 'object') context.globalState.update('titles', msg.titles);
+      if (Array.isArray(msg.hidden)) context.globalState.update('hidden', msg.hidden);
+      break;
+    }
+    case 'deleteSession': {
+      const session = await findSession(msg.id);
+      if (!session) return;
+      const name = context.globalState.get('titles', {})[msg.id] || session.title || msg.id;
+      // Deleting someone's chat history is irreversible enough to warrant a real modal.
+      const answer = await vscode.window.showWarningMessage(
+        `Delete the chat “${name}” permanently?`,
+        {
+          modal: true,
+          detail:
+            'The session file will be moved to the Trash, so the chat also disappears from Claude Code itself.\n\n' +
+            session.file +
+            '\n\nYou can restore it from the Trash if this was a mistake.',
+        },
+        'Delete'
+      );
+      if (answer !== 'Delete') return;
+      try {
+        await vscode.workspace.fs.delete(vscode.Uri.file(session.file), { useTrash: true });
+        sessionCache = sessionCache.filter((s) => s.id !== msg.id);
+        if (panel) panel.webview.postMessage({ type: 'sessionDeleted', id: msg.id });
+        await sendSessions();
+      } catch (err) {
+        vscode.window.showErrorMessage('Agent Tabs: could not delete the chat — ' + err.message);
+      }
       break;
     }
     case 'refresh': {

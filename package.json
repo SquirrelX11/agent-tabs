@@ -2,7 +2,7 @@
   "name": "agent-tabs",
   "displayName": "Agent Tabs",
   "description": "Browse your Claude Code chat history as browser-style tabs — with bookmarks, search, and project grouping. 100% local, no telemetry.",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "publisher": "squirrelx11",
   "license": "MIT",
   "author": {
