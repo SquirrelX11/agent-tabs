@@ -80,7 +80,10 @@ async function quickOpen(context) {
   sessionCache = sessions;
 
   if (sessions.length === 0) {
-    vscode.window.showInformationMessage('Agent Tabs: no Claude Code sessions found in ' + getProjectsDir());
+    vscode.window.showInformationMessage(
+      'Agent Tabs: no Claude Code sessions found in ' + getProjectsDir() +
+        '. This extension shows Claude Code history — it cannot read chats from other assistants.'
+    );
     return;
   }
 

@@ -228,3 +228,14 @@ mark.hit.current {
   color: var(--muted); flex-direction: column; gap: 10px; padding: 40px; text-align: center;
 }
 .placeholder .big { font-size: 40px; opacity: .5; }
+
+/* Shown when there are no sessions at all — as opposed to no search matches. */
+.empty-state {
+  padding: 16px 12px; color: var(--muted); font-size: 12px; line-height: 1.5;
+}
+.empty-state b { color: var(--fg); display: block; margin-bottom: 6px; }
+.empty-state p { margin: 8px 0 0; }
+.empty-state code {
+  background: rgba(128,128,128,.18); padding: 1px 4px; border-radius: 3px;
+  font-family: var(--vscode-editor-font-family, monospace);
+}

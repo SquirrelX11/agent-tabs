@@ -244,8 +244,19 @@
     const keys = Object.keys(groups);
     if (keys.length === 0) {
       const empty = document.createElement('div');
-      empty.className = 'session-group-title';
-      empty.textContent = 'No matches';
+      // An empty list means two very different things; saying "No matches" when the user
+      // has simply never run Claude Code reads as a broken extension.
+      if (state.sessions.length === 0) {
+        empty.className = 'empty-state';
+        empty.innerHTML =
+          '<b>No Claude Code sessions found.</b>' +
+          '<p>This extension shows the history of Claude Code, read from <code>~/.claude/projects/</code>. ' +
+          'If you have not used Claude Code on this machine yet, there is nothing to show here.</p>' +
+          '<p>It cannot read chats from Cursor, Copilot or other assistants — they store history in their own formats.</p>';
+      } else {
+        empty.className = 'session-group-title';
+        empty.textContent = 'No matches';
+      }
       list.appendChild(empty);
       return;
     }

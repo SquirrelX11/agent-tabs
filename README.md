@@ -6,6 +6,14 @@ Reads session history straight from `~/.claude/projects/*/*.jsonl`.
 
 ![Agent Tabs](media/screenshot.png)
 
+## ⚠️ Requires Claude Code
+
+**This extension shows the history of [Claude Code](https://claude.com/claude-code).** It reads the session files Claude Code writes to `~/.claude/projects/`. If you've never run Claude Code on this machine, there is nothing for it to show and the list will be empty — that's not a bug.
+
+It does **not** read chats from Cursor, Copilot, Cline, or any other assistant; those keep their history in their own formats. Works in VS Code, Cursor, VSCodium, Windsurf and Gitpod — as long as Claude Code is what you chat with.
+
+The optional "continue in Claude Code" button additionally needs the **Claude Code for VS Code** extension (`Anthropic.claude-code`), which is on both the VS Code Marketplace and Open VSX. Without it, chats still open in the built-in viewer.
+
 ## 🔒 Privacy
 
 **Everything runs locally. This extension sends nothing anywhere.** No telemetry, no analytics, no network requests — none at all. It only reads the Claude Code history files already sitting on your disk and renders them in a panel. The source is open, so you can check: there isn't a single line of networking in it.
