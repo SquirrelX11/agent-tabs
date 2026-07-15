@@ -2,7 +2,7 @@
   "name": "agent-tabs",
   "displayName": "Agent Tabs",
   "description": "Browse your Claude Code chat history as browser-style tabs — with bookmarks, search, and project grouping. 100% local, no telemetry.",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "publisher": "squirrelx11",
   "license": "MIT",
   "author": {
@@ -98,15 +98,15 @@
         "agentTabs.openChatsIn": {
           "type": "string",
           "enum": [
-            "claude-code",
-            "built-in-viewer"
+            "built-in-viewer",
+            "claude-code"
           ],
           "enumDescriptions": [
-            "Open the live Claude Code chat, so you can carry on where you left off.",
-            "Open the read-only viewer built into Agent Tabs."
+            "Open the Agent Tabs panel: browser-style tabs, bookmarks, and find-in-chat.",
+            "Jump straight to the live Claude Code conversation."
           ],
-          "default": "claude-code",
-          "description": "What happens when you pick a chat. Falls back to the built-in viewer if the Claude Code extension can't be reached."
+          "default": "built-in-viewer",
+          "description": "What happens when you pick a chat. The built-in viewer keeps every chat as a browser-style tab with bookmarks; from there, 'continue in Claude Code' opens the live conversation."
         }
       }
     },

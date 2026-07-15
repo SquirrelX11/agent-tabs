@@ -113,7 +113,8 @@ async function quickOpen(context) {
  * otherwise our own read-only viewer.
  */
 async function revealSession(context, id) {
-  const target = vscode.workspace.getConfiguration('agentTabs').get('openChatsIn') || 'claude-code';
+  // Keep this fallback in step with the manifest default.
+  const target = vscode.workspace.getConfiguration('agentTabs').get('openChatsIn') || 'built-in-viewer';
 
   if (target === 'claude-code' && (await openInClaudeCode(id))) return;
 
