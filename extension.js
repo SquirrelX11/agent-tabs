@@ -59,12 +59,15 @@ function openPanel(context) {
     panel.webview.asWebviewUri(vscode.Uri.file(path.join(context.extensionPath, 'media', name)));
 
   const n = nonce();
+  // No remote origins anywhere: the panel may only load what ships with the extension.
+  // This makes "reads local files, talks to nobody" enforced rather than merely true.
   const csp = [
     `default-src 'none'`,
-    `img-src ${panel.webview.cspSource} https: data:`,
+    `img-src ${panel.webview.cspSource} data:`,
     `style-src ${panel.webview.cspSource}`,
     `script-src 'nonce-${n}'`,
     `font-src ${panel.webview.cspSource}`,
+    `connect-src 'none'`,
   ].join('; ');
 
   panel.webview.html = `<!DOCTYPE html>
