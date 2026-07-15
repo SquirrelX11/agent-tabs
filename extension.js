@@ -85,13 +85,14 @@ async function quickOpen(context) {
   }
 
   const bookmarked = new Set(context.globalState.get('bookmarks', []).map((b) => b.id));
+  const titles = context.globalState.get('titles', {});
   const ordered = [
     ...sessions.filter((s) => bookmarked.has(s.id)),
     ...sessions.filter((s) => !bookmarked.has(s.id)),
   ];
 
   const items = ordered.map((s) => ({
-    label: (bookmarked.has(s.id) ? '$(star-full) ' : '$(comment-discussion) ') + (s.title || 'Untitled'),
+    label: (bookmarked.has(s.id) ? '$(star-full) ' : '$(comment-discussion) ') + (titles[s.id] || s.title || 'Untitled'),
     description: [projectLabel(s.cwd), s.gitBranch].filter(Boolean).join('  ·  '),
     detail: s.firstPrompt ? s.firstPrompt.slice(0, 110) : undefined,
     id: s.id,
@@ -198,6 +199,7 @@ async function handleMessage(context, msg) {
         openTabs: context.globalState.get('openTabs', []),
         bookmarks: context.globalState.get('bookmarks', []),
         active: context.globalState.get('activeTab', ''),
+        titles: context.globalState.get('titles', {}),
       });
       await sendSessions();
       // A chat picked while the panel was still booting — open it now.
@@ -225,6 +227,7 @@ async function handleMessage(context, msg) {
       if (Array.isArray(msg.openTabs)) context.globalState.update('openTabs', msg.openTabs);
       if (Array.isArray(msg.bookmarks)) context.globalState.update('bookmarks', msg.bookmarks);
       if (typeof msg.active === 'string') context.globalState.update('activeTab', msg.active);
+      if (msg.titles && typeof msg.titles === 'object') context.globalState.update('titles', msg.titles);
       break;
     }
     case 'refresh': {

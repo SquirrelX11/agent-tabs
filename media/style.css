@@ -50,6 +50,17 @@ html, body {
   top: 0;
 }
 .tab .favicon { flex: 0 0 auto; opacity: .8; }
+.tab.renaming { padding: 4px 6px; }
+input.rename {
+  width: 100%; min-width: 90px;
+  padding: 3px 6px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-focusBorder, var(--accent));
+  border-radius: 4px;
+  font-size: 13px; font-family: inherit;
+}
+.addressbar .title.renaming { flex: 0 1 340px; }
 .tab .label { overflow: hidden; text-overflow: ellipsis; flex: 1; }
 .tab .close {
   flex: 0 0 auto; width: 16px; height: 16px; line-height: 16px;
@@ -132,10 +143,15 @@ html, body {
 .content { flex: 1; overflow-y: auto; min-width: 0; display: flex; flex-direction: column; }
 
 /* Address bar for the current chat */
+/* Address bar + find bar pin together as one block. */
+.chrome-header {
+  position: sticky; top: 0; z-index: 3;
+  background: var(--tab-active);
+}
 .addressbar {
   display: flex; align-items: center; gap: 10px;
   padding: 8px 14px; border-bottom: 1px solid var(--line);
-  background: var(--tab-active); position: sticky; top: 0; z-index: 2;
+  background: var(--tab-active);
 }
 .addressbar .star-btn { font-size: 16px; cursor: pointer; }
 .addressbar .star-btn.on { color: #f5c518; }
@@ -150,6 +166,35 @@ html, body {
   font-weight: 600;
 }
 .addressbar .act.primary:hover { filter: brightness(1.12); color: var(--vscode-button-foreground, #fff); }
+
+/* Find-in-chat bar */
+.findbar {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 14px;
+  background: var(--vscode-editorWidget-background, var(--tab-inactive));
+  border-bottom: 1px solid var(--line);
+}
+.findbar input {
+  flex: 0 1 320px; padding: 4px 8px;
+  background: var(--vscode-input-background);
+  color: var(--vscode-input-foreground);
+  border: 1px solid var(--vscode-focusBorder, var(--line));
+  border-radius: 5px;
+}
+.findbar .count { font-size: 11px; color: var(--muted); min-width: 68px; }
+.findbar .nav {
+  cursor: pointer; padding: 2px 7px; border-radius: 4px; color: var(--muted); user-select: none;
+}
+.findbar .nav:hover { background: rgba(128,128,128,.25); color: var(--fg); }
+
+mark.hit {
+  background: var(--vscode-editor-findMatchHighlightBackground, rgba(234,179,8,.35));
+  color: inherit; border-radius: 2px;
+}
+mark.hit.current {
+  background: var(--vscode-editor-findMatchBackground, #f5c518);
+  color: #1f1f1f; outline: 1px solid var(--vscode-focusBorder, #4a9eff);
+}
 
 .messages { padding: 16px 18px; max-width: 900px; width: 100%; margin: 0 auto; }
 .msg { margin-bottom: 16px; }

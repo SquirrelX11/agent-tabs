@@ -15,6 +15,10 @@ Reads session history straight from `~/.claude/projects/*/*.jsonl`.
 - 🗂 **Browser-style tabs** — open chats live as tabs at the top; switch with one click.
 - ★ **Bookmarks** — the star pins a chat to the bookmarks bar (persists across restarts).
 - 🔎 **Search & list** on the left — every session, grouped by project; search by title, first message, or path.
+- ⌨️ **Quick access** — `Cmd+Alt+A` opens a `Cmd+P`-style picker over every chat, bookmarks first. Also on the status bar and next to the Claude icon in the editor title.
+- ▶ **Back into the real chat** — picking a chat opens the live Claude Code conversation, so you can carry on where you left off.
+- 🔦 **Find in chat** — `Cmd+F` inside a chat, with match count and Enter/Shift+Enter to step through hits.
+- ✏️ **Rename tabs** — double-click a tab and call it what you want; your name overrides Claude's generated title everywhere. Clear it to get the original back.
 - 🤖 **Automatic titles** — taken from the `ai-title` that Claude Code generates itself.
 - 🛠 **Readable transcript** — internal tool results don't pose as your messages; tool calls collapse into compact chips.
 - ↗ **Quick actions** — open the project folder in a new window, reveal the `.jsonl` in your file manager.

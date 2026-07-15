@@ -11,6 +11,10 @@
     contents: {}, // id -> {meta, messages, truncated}
     filter: '',
     dir: '',
+    // Cmd+F within the open chat: query, which hit is selected, and whether the bar is up.
+    find: { query: '', idx: 0, open: false },
+    // User-chosen tab names, keyed by session id. These win over Claude's ai-title.
+    titles: {},
   };
 
   const app = document.getElementById('app');
@@ -19,6 +23,24 @@
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+  function escRe(s) {
+    return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  }
+
+  // Counter for the hits produced during one pass over the messages.
+  let hitSeq = 0;
+
+  /**
+   * Escape first, then wrap matches in <mark> — escaping the query too, so it matches
+   * the escaped text and can never inject markup of its own.
+   */
+  function highlight(text) {
+    const escaped = esc(text);
+    const q = state.find.query.trim();
+    if (!q) return escaped;
+    const re = new RegExp(escRe(esc(q)), 'gi');
+    return escaped.replace(re, (m) => `<mark class="hit" data-i="${hitSeq++}">${m}</mark>`);
   }
   function timeAgo(ms) {
     if (!ms) return '';
@@ -35,6 +57,21 @@
     return parts[parts.length - 1] || cwd;
   }
   function sessionById(id) { return state.sessions.find((s) => s.id === id); }
+  /** A user-set name beats Claude's generated ai-title; fall back through to 'Chat'. */
+  function titleOf(id) {
+    if (state.titles[id]) return state.titles[id];
+    const s = sessionById(id) || (state.contents[id] && state.contents[id].meta);
+    return (s && s.title) || 'Chat';
+  }
+  function renameSession(id, name) {
+    const clean = (name || '').trim();
+    if (clean) state.titles[id] = clean;
+    else delete state.titles[id]; // empty input restores the original title
+    const bm = state.bookmarks.find((b) => b.id === id);
+    if (bm) bm.title = titleOf(id);
+    persist();
+    render();
+  }
   function isBookmarked(id) { return state.bookmarks.some((b) => b.id === id); }
 
   function persist() {
@@ -43,6 +80,7 @@
       openTabs: state.openTabs,
       bookmarks: state.bookmarks,
       active: state.active,
+      titles: state.titles,
     });
   }
 
@@ -71,7 +109,7 @@
     if (idx >= 0) state.bookmarks.splice(idx, 1);
     else {
       const s = sessionById(id) || (state.contents[id] && state.contents[id].meta) || { id, title: id };
-      state.bookmarks.push({ id, title: s.title || 'Chat' });
+      state.bookmarks.push({ id, title: titleOf(id) });
     }
     persist();
     render();
@@ -93,14 +131,17 @@
     const bar = document.createElement('div');
     bar.className = 'tabbar';
     for (const id of state.openTabs) {
-      const s = sessionById(id) || (state.contents[id] && state.contents[id].meta) || { id, title: id };
       const tab = document.createElement('div');
       tab.className = 'tab' + (id === state.active ? ' active' : '');
-      tab.title = s.title || id;
+      tab.title = titleOf(id) + '  —  double-click to rename';
       tab.innerHTML =
         `<span class="favicon">${isBookmarked(id) ? '★' : '💬'}</span>` +
-        `<span class="label">${esc(s.title || 'Chat')}</span>` +
+        `<span class="label">${esc(titleOf(id))}</span>` +
         `<span class="close" data-close="${esc(id)}">✕</span>`;
+      tab.addEventListener('dblclick', (e) => {
+        e.stopPropagation();
+        startRename(tab, id);
+      });
       tab.addEventListener('click', (e) => {
         if (e.target.dataset && e.target.dataset.close) { closeTab(id); return; }
         state.active = id;
@@ -217,7 +258,7 @@
         const item = document.createElement('div');
         item.className = 'session-item' + (state.openTabs.includes(s.id) ? ' open' : '');
         item.innerHTML =
-          `<div class="title">${isBookmarked(s.id) ? '★ ' : ''}${esc(s.title || 'Untitled')}</div>` +
+          `<div class="title">${isBookmarked(s.id) ? '★ ' : ''}${esc(titleOf(s.id))}</div>` +
           `<div class="meta"><span>${timeAgo(s.mtime)}</span>` +
           (s.gitBranch ? `<span>⎇ ${esc(s.gitBranch)}</span>` : '') + `</div>`;
         item.title = s.firstPrompt || s.title || '';
@@ -226,6 +267,174 @@
       }
     }
   }
+
+  /** Render the transcript into `msgs`, highlighting hits for the current query. */
+  function buildMessages(msgs, data) {
+    msgs.innerHTML = '';
+    hitSeq = 0;
+    if (data.messages.length === 0) {
+      msgs.innerHTML = `<div class="placeholder">This session has no text messages.</div>`;
+      return;
+    }
+    for (let i = 0; i < data.messages.length; i++) {
+      const m = data.messages[i];
+      const el = document.createElement('div');
+
+      if (m.kind === 'tool') {
+        // Collapse a run of consecutive tool calls into one row of chips;
+        // otherwise every Bash would take a row of its own.
+        const chips = [];
+        while (i < data.messages.length && data.messages[i].kind === 'tool') {
+          chips.push(...data.messages[i].text.split('\n'));
+          i++;
+        }
+        i--;
+        el.className = 'toolrow';
+        el.innerHTML = chips.map((l) => `<span class="toolchip">${highlight(l)}</span>`).join('');
+      } else {
+        el.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant');
+        el.innerHTML =
+          `<div class="who">${m.role === 'user' ? '🧑 You' : '🤖 Claude'}</div>` +
+          `<div class="bubble">${highlight(m.text)}</div>`;
+      }
+      msgs.appendChild(el);
+    }
+  }
+
+  // ---------- rename ----------
+  /** Turn a tab (or the address-bar title) into an input, in place. */
+  function startRename(anchor, id) {
+    if (anchor.querySelector('input.rename') || anchor.classList.contains('renaming')) return;
+    const prev = anchor.innerHTML;
+    anchor.classList.add('renaming');
+    anchor.innerHTML = '';
+
+    const input = document.createElement('input');
+    input.className = 'rename';
+    input.type = 'text';
+    input.value = titleOf(id);
+    input.title = 'Enter to save · Esc to cancel · empty to restore the original';
+    anchor.appendChild(input);
+    input.focus();
+    input.select();
+
+    let done = false;
+    const cancel = () => {
+      if (done) return;
+      done = true;
+      anchor.classList.remove('renaming');
+      anchor.innerHTML = prev;
+      render();
+    };
+    const save = () => {
+      if (done) return;
+      done = true;
+      renameSession(id, input.value);
+    };
+
+    input.addEventListener('keydown', (e) => {
+      e.stopPropagation(); // don't let Cmd+F/Esc handlers fire while typing a name
+      if (e.key === 'Enter') { e.preventDefault(); save(); }
+      else if (e.key === 'Escape') { e.preventDefault(); cancel(); }
+    });
+    input.addEventListener('blur', save);
+    input.addEventListener('click', (e) => e.stopPropagation());
+    input.addEventListener('dblclick', (e) => e.stopPropagation());
+  }
+
+  // ---------- find in chat ----------
+  function openFind() {
+    if (!state.active) return;
+    state.find.open = true;
+    render();
+    const input = document.querySelector('.findbar input');
+    if (input) { input.focus(); input.select(); }
+  }
+
+  function closeFind() {
+    state.find.open = false;
+    state.find.query = '';
+    state.find.idx = 0;
+    render();
+  }
+
+  function hits() { return Array.from(document.querySelectorAll('mark.hit')); }
+
+  /** Re-render just the transcript, then mark and scroll to the selected hit. */
+  function applyFind(keepFocus) {
+    const data = state.contents[state.active];
+    const msgs = document.querySelector('.messages');
+    if (!data || !msgs) return;
+    buildMessages(msgs, data);
+
+    const all = hits();
+    if (all.length === 0) state.find.idx = 0;
+    else state.find.idx = ((state.find.idx % all.length) + all.length) % all.length;
+
+    all.forEach((h, i) => h.classList.toggle('current', i === state.find.idx));
+    if (all.length) all[state.find.idx].scrollIntoView({ block: 'center', behavior: 'smooth' });
+
+    const count = document.querySelector('.findbar .count');
+    if (count) count.textContent = all.length ? `${state.find.idx + 1}/${all.length}` : 'no results';
+
+    if (keepFocus) {
+      const input = document.querySelector('.findbar input');
+      if (input) input.focus();
+    }
+  }
+
+  function step(delta) {
+    if (!hits().length) return;
+    state.find.idx += delta;
+    applyFind(true);
+  }
+
+  function renderFindBar() {
+    const bar = document.createElement('div');
+    bar.className = 'findbar';
+
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.placeholder = 'Find in this chat…';
+    input.value = state.find.query;
+    input.addEventListener('input', () => {
+      state.find.query = input.value;
+      state.find.idx = 0;
+      applyFind(true);
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') { e.preventDefault(); step(e.shiftKey ? -1 : 1); }
+      else if (e.key === 'Escape') { e.preventDefault(); closeFind(); }
+    });
+
+    const count = document.createElement('span');
+    count.className = 'count';
+    count.textContent = '';
+
+    const prev = document.createElement('span');
+    prev.className = 'nav'; prev.textContent = '↑'; prev.title = 'Previous (Shift+Enter)';
+    prev.addEventListener('click', () => step(-1));
+    const next = document.createElement('span');
+    next.className = 'nav'; next.textContent = '↓'; next.title = 'Next (Enter)';
+    next.addEventListener('click', () => step(1));
+    const close = document.createElement('span');
+    close.className = 'nav'; close.textContent = '✕'; close.title = 'Close (Esc)';
+    close.addEventListener('click', () => closeFind());
+
+    bar.append(input, count, prev, next, close);
+    return bar;
+  }
+
+  // Cmd+F anywhere in the panel opens find; Esc closes it.
+  document.addEventListener('keydown', (e) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === 'f') {
+      e.preventDefault();
+      openFind();
+    } else if (e.key === 'Escape' && state.find.open) {
+      e.preventDefault();
+      closeFind();
+    }
+  });
 
   function renderContent() {
     const content = document.createElement('div');
@@ -253,7 +462,10 @@
     star.addEventListener('click', () => toggleBookmark(state.active));
     const titleEl = document.createElement('span');
     titleEl.className = 'title';
-    titleEl.textContent = meta.title || 'Chat';
+    titleEl.textContent = titleOf(state.active);
+    titleEl.title = 'Double-click to rename';
+    titleEl.style.cursor = 'text';
+    titleEl.addEventListener('dblclick', () => startRename(titleEl, state.active));
     const crumbs = document.createElement('span');
     crumbs.className = 'crumbs';
     crumbs.innerHTML =
@@ -279,8 +491,21 @@
     revealBtn.title = 'Reveal the .jsonl in your file manager';
     revealBtn.addEventListener('click', () => vscode.postMessage({ type: 'revealInOS', id: state.active }));
 
-    addr.append(star, titleEl, crumbs, spacer, cont, openFolder, revealBtn);
-    content.appendChild(addr);
+    const findBtn = document.createElement('span');
+    findBtn.className = 'act';
+    findBtn.textContent = '🔍 find';
+    findBtn.title = 'Search inside this chat (Cmd+F)';
+    findBtn.addEventListener('click', () => openFind());
+
+    addr.append(star, titleEl, crumbs, spacer, findBtn, cont, openFolder, revealBtn);
+
+    // One sticky header: pinning the bars separately meant guessing the address bar's
+    // height, and any drift opened a gap that the transcript showed through.
+    const header = document.createElement('div');
+    header.className = 'chrome-header';
+    header.appendChild(addr);
+    if (state.find.open) header.appendChild(renderFindBar());
+    content.appendChild(header);
 
     if (!data) {
       const ph = document.createElement('div');
@@ -292,32 +517,7 @@
 
     const msgs = document.createElement('div');
     msgs.className = 'messages';
-    if (data.messages.length === 0) {
-      msgs.innerHTML = `<div class="placeholder">This session has no text messages.</div>`;
-    }
-    for (let i = 0; i < data.messages.length; i++) {
-      const m = data.messages[i];
-      const el = document.createElement('div');
-
-      if (m.kind === 'tool') {
-        // Collapse a run of consecutive tool calls into one row of chips;
-        // otherwise every Bash would take a row of its own.
-        const chips = [];
-        while (i < data.messages.length && data.messages[i].kind === 'tool') {
-          chips.push(...data.messages[i].text.split('\n'));
-          i++;
-        }
-        i--;
-        el.className = 'toolrow';
-        el.innerHTML = chips.map((l) => `<span class="toolchip">${esc(l)}</span>`).join('');
-      } else {
-        el.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant');
-        el.innerHTML =
-          `<div class="who">${m.role === 'user' ? '🧑 You' : '🤖 Claude'}</div>` +
-          `<div class="bubble">${esc(m.text)}</div>`;
-      }
-      msgs.appendChild(el);
-    }
+    buildMessages(msgs, data);
     content.appendChild(msgs);
 
     if (data.truncated) {
@@ -337,6 +537,7 @@
         state.openTabs = msg.openTabs || [];
         state.bookmarks = msg.bookmarks || [];
         state.active = msg.active || '';
+        state.titles = msg.titles || {};
         for (const id of state.openTabs) {
           if (!state.contents[id]) vscode.postMessage({ type: 'openSession', id });
         }
