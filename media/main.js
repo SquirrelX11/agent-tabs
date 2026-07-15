@@ -262,6 +262,12 @@
       `<span>${timeAgo(meta.mtime)}</span>`;
     const spacer = document.createElement('span');
     spacer.className = 'spacer';
+    // The whole point of browsing history is picking up where you left off.
+    const cont = document.createElement('span');
+    cont.className = 'act primary';
+    cont.textContent = '▶ continue in Claude Code';
+    cont.title = 'Open this session as a live Claude Code chat';
+    cont.addEventListener('click', () => vscode.postMessage({ type: 'continueInClaude', id: state.active }));
     const openFolder = document.createElement('span');
     openFolder.className = 'act';
     openFolder.textContent = '↗ project';
@@ -273,7 +279,7 @@
     revealBtn.title = 'Reveal the .jsonl in your file manager';
     revealBtn.addEventListener('click', () => vscode.postMessage({ type: 'revealInOS', id: state.active }));
 
-    addr.append(star, titleEl, crumbs, spacer, openFolder, revealBtn);
+    addr.append(star, titleEl, crumbs, spacer, cont, openFolder, revealBtn);
     content.appendChild(addr);
 
     if (!data) {
@@ -340,6 +346,9 @@
         state.sessions = msg.sessions || [];
         state.dir = msg.dir || '';
         render();
+        break;
+      case 'openTab':
+        openSession(msg.id);
         break;
       case 'sessionContent':
         state.contents[msg.id] = { meta: msg.meta, messages: msg.messages, truncated: msg.truncated };

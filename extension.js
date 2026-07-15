@@ -8,6 +8,8 @@ const { defaultProjectsDir, listSessions, loadSession } = require('./sessionRead
 let panel = null;
 let watchers = [];
 let refreshTimer = null;
+// A chat picked before the webview finished booting; flushed once it reports 'ready'.
+let pendingOpenId = null;
 
 function getProjectsDir() {
   const cfg = vscode.workspace.getConfiguration('agentTabs').get('projectsDir');
@@ -28,14 +30,106 @@ function nonce() {
 function activate(context) {
   context.subscriptions.push(
     vscode.commands.registerCommand('agentTabs.open', () => openPanel(context)),
-    vscode.commands.registerCommand('agentTabs.refresh', () => sendSessions())
+    vscode.commands.registerCommand('agentTabs.refresh', () => sendSessions()),
+    vscode.commands.registerCommand('agentTabs.quickOpen', () => quickOpen(context))
   );
+
+  // One-click way in that's always on screen.
+  const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
+  status.text = '$(comment-discussion) Chats';
+  status.tooltip = 'Agent Tabs — pick a Claude Code chat';
+  status.command = 'agentTabs.quickOpen';
+  status.show();
+  context.subscriptions.push(status);
 
   // In the Extension Development Host (F5), show the panel right away; otherwise it would
   // have to be summoned from the palette every run. A normal install waits for the command.
   if (context.extensionMode === vscode.ExtensionMode.Development) {
     openPanel(context);
   }
+}
+
+// The Claude Code extension registers this as (sessionId, initialPrompt, viewColumn) and
+// calls it that way internally. It is NOT a documented API, so treat it as best-effort:
+// probe for it every time and fall back to the built-in viewer when it's missing.
+const CLAUDE_OPEN_COMMAND = 'claude-vscode.editor.open';
+
+async function claudeCodeAvailable() {
+  const all = await vscode.commands.getCommands(true);
+  return all.includes(CLAUDE_OPEN_COMMAND);
+}
+
+/**
+ * Open the real, live Claude Code chat for a session.
+ * Returns false if that isn't possible, so the caller can fall back.
+ */
+async function openInClaudeCode(sessionId) {
+  if (!(await claudeCodeAvailable())) return false;
+  try {
+    await vscode.commands.executeCommand(CLAUDE_OPEN_COMMAND, sessionId, undefined, vscode.ViewColumn.Active);
+    return true;
+  } catch (err) {
+    console.error('Agent Tabs: handing off to Claude Code failed', err);
+    return false;
+  }
+}
+
+/** Cmd+P-style chat picker: bookmarks first, then everything by recency. */
+async function quickOpen(context) {
+  const { sessions } = await listSessions(getProjectsDir());
+  sessionCache = sessions;
+
+  if (sessions.length === 0) {
+    vscode.window.showInformationMessage('Agent Tabs: no Claude Code sessions found in ' + getProjectsDir());
+    return;
+  }
+
+  const bookmarked = new Set(context.globalState.get('bookmarks', []).map((b) => b.id));
+  const ordered = [
+    ...sessions.filter((s) => bookmarked.has(s.id)),
+    ...sessions.filter((s) => !bookmarked.has(s.id)),
+  ];
+
+  const items = ordered.map((s) => ({
+    label: (bookmarked.has(s.id) ? '$(star-full) ' : '$(comment-discussion) ') + (s.title || 'Untitled'),
+    description: [projectLabel(s.cwd), s.gitBranch].filter(Boolean).join('  ·  '),
+    detail: s.firstPrompt ? s.firstPrompt.slice(0, 110) : undefined,
+    id: s.id,
+  }));
+
+  const pick = await vscode.window.showQuickPick(items, {
+    placeHolder: 'Search your Claude Code chats…',
+    matchOnDescription: true,
+    matchOnDetail: true,
+  });
+  if (!pick) return;
+
+  await revealSession(context, pick.id);
+}
+
+/**
+ * Show a session the best way available: the live Claude Code chat if we can reach it,
+ * otherwise our own read-only viewer.
+ */
+async function revealSession(context, id) {
+  const target = vscode.workspace.getConfiguration('agentTabs').get('openChatsIn') || 'claude-code';
+
+  if (target === 'claude-code' && (await openInClaudeCode(id))) return;
+
+  const wasOpen = !!panel;
+  openPanel(context);
+  if (wasOpen) {
+    panel.webview.postMessage({ type: 'openTab', id });
+  } else {
+    // Panel is still booting; hand the pick over once the webview says it's ready.
+    pendingOpenId = id;
+  }
+}
+
+function projectLabel(cwd) {
+  if (!cwd) return '';
+  const parts = cwd.split('/').filter(Boolean);
+  return parts[parts.length - 1] || cwd;
 }
 
 function openPanel(context) {
@@ -106,6 +200,11 @@ async function handleMessage(context, msg) {
         active: context.globalState.get('activeTab', ''),
       });
       await sendSessions();
+      // A chat picked while the panel was still booting — open it now.
+      if (pendingOpenId) {
+        panel.webview.postMessage({ type: 'openTab', id: pendingOpenId });
+        pendingOpenId = null;
+      }
       break;
     }
     case 'openSession': {
@@ -130,6 +229,15 @@ async function handleMessage(context, msg) {
     }
     case 'refresh': {
       await sendSessions();
+      break;
+    }
+    case 'continueInClaude': {
+      const ok = await openInClaudeCode(msg.id);
+      if (!ok) {
+        vscode.window.showWarningMessage(
+          'Agent Tabs: could not hand this chat to Claude Code. Is the Claude Code extension installed and up to date?'
+        );
+      }
       break;
     }
     case 'revealInOS': {

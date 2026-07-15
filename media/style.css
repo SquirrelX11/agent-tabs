@@ -144,6 +144,12 @@ html, body {
 .addressbar .spacer { flex: 1; }
 .addressbar .act { cursor: pointer; color: var(--muted); padding: 2px 6px; border-radius: 5px; }
 .addressbar .act:hover { background: rgba(128,128,128,.2); color: var(--fg); }
+.addressbar .act.primary {
+  color: var(--vscode-button-foreground, #fff);
+  background: var(--vscode-button-background, #0078d4);
+  font-weight: 600;
+}
+.addressbar .act.primary:hover { filter: brightness(1.12); color: var(--vscode-button-foreground, #fff); }
 
 .messages { padding: 16px 18px; max-width: 900px; width: 100%; margin: 0 auto; }
 .msg { margin-bottom: 16px; }

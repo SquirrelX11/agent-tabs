@@ -1,0 +1,8 @@
+<svg width="16" height="16" viewBox="0 0 16 16" xmlns="http://www.w3.org/2000/svg">
+  <!-- Tab strip + bookmark star. Light glyph for dark themes. -->
+  <path d="M1.5 4.2c0-.39.31-.7.7-.7h3.1c.39 0 .7.31.7.7v1.3H1.5V4.2z" fill="#C5C5C5"/>
+  <path d="M6.9 4.8c0-.33.27-.6.6-.6h2.3c.33 0 .6.27.6.6v.7H6.9v-.7z" fill="#858585"/>
+  <path d="M11.3 4.8c0-.33.27-.6.6-.6h1.9c.33 0 .6.27.6.6v.7h-3.1v-.7z" fill="#858585"/>
+  <rect x="1.5" y="5.5" width="13" height="7.6" rx="1" fill="none" stroke="#C5C5C5" stroke-width="1.1"/>
+  <path d="M8 6.9l.85 1.72 1.9.28-1.37 1.34.32 1.89L8 11.23l-1.7.9.32-1.89L5.25 8.9l1.9-.28L8 6.9z" fill="#C5C5C5"/>
+</svg>

@@ -42,6 +42,15 @@
   "contributes": {
     "commands": [
       {
+        "command": "agentTabs.quickOpen",
+        "title": "Go to Chat…",
+        "category": "Agent Tabs",
+        "icon": {
+          "light": "resources/agent-tabs-light.svg",
+          "dark": "resources/agent-tabs-dark.svg"
+        }
+      },
+      {
         "command": "agentTabs.open",
         "title": "Open Chat Panel",
         "category": "Agent Tabs",
@@ -56,8 +65,21 @@
     ],
     "menus": {
       "commandPalette": [
-        { "command": "agentTabs.open" },
-        { "command": "agentTabs.refresh" }
+        {
+          "command": "agentTabs.quickOpen"
+        },
+        {
+          "command": "agentTabs.open"
+        },
+        {
+          "command": "agentTabs.refresh"
+        }
+      ],
+      "editor/title": [
+        {
+          "command": "agentTabs.quickOpen",
+          "group": "navigation@100"
+        }
       ]
     },
     "configuration": {
@@ -72,9 +94,34 @@
           "type": "number",
           "default": 800,
           "description": "Maximum number of messages rendered in a single chat (guards against enormous sessions)."
+        },
+        "agentTabs.openChatsIn": {
+          "type": "string",
+          "enum": [
+            "claude-code",
+            "built-in-viewer"
+          ],
+          "enumDescriptions": [
+            "Open the live Claude Code chat, so you can carry on where you left off.",
+            "Open the read-only viewer built into Agent Tabs."
+          ],
+          "default": "claude-code",
+          "description": "What happens when you pick a chat. Falls back to the built-in viewer if the Claude Code extension can't be reached."
         }
       }
-    }
+    },
+    "keybindings": [
+      {
+        "command": "agentTabs.quickOpen",
+        "key": "ctrl+alt+a",
+        "mac": "cmd+alt+a"
+      },
+      {
+        "command": "agentTabs.open",
+        "key": "ctrl+alt+shift+a",
+        "mac": "cmd+alt+shift+a"
+      }
+    ]
   },
   "scripts": {
     "package": "npx --yes @vscode/vsce package",
