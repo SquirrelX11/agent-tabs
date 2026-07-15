@@ -1,0 +1,83 @@
+{
+  "name": "agent-tabs",
+  "displayName": "Agent Tabs",
+  "description": "Все чаты с Claude Code как вкладки браузера — с закладками, поиском и группировкой по проектам. Работает локально.",
+  "version": "0.1.0",
+  "publisher": "squirrelx11",
+  "license": "MIT",
+  "author": {
+    "name": "Alex"
+  },
+  "icon": "media/icon.png",
+  "galleryBanner": {
+    "color": "#181818",
+    "theme": "dark"
+  },
+  "homepage": "https://github.com/SquirrelX11/agent-tabs#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/SquirrelX11/agent-tabs.git"
+  },
+  "bugs": {
+    "url": "https://github.com/SquirrelX11/agent-tabs/issues"
+  },
+  "engines": {
+    "vscode": "^1.84.0"
+  },
+  "categories": [
+    "Other",
+    "Visualization"
+  ],
+  "keywords": [
+    "claude",
+    "claude code",
+    "ai",
+    "chat history",
+    "tabs"
+  ],
+  "main": "./extension.js",
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "agentTabs.open",
+        "title": "Agent Tabs: открыть панель чатов",
+        "category": "Agent Tabs",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "agentTabs.refresh",
+        "title": "Agent Tabs: обновить список сессий",
+        "category": "Agent Tabs",
+        "icon": "$(refresh)"
+      }
+    ],
+    "menus": {
+      "commandPalette": [
+        { "command": "agentTabs.open" },
+        { "command": "agentTabs.refresh" }
+      ]
+    },
+    "configuration": {
+      "title": "Agent Tabs",
+      "properties": {
+        "agentTabs.projectsDir": {
+          "type": "string",
+          "default": "",
+          "description": "Путь к папке с сессиями Claude Code. Пусто = ~/.claude/projects"
+        },
+        "agentTabs.maxMessagesPerChat": {
+          "type": "number",
+          "default": 800,
+          "description": "Максимум сообщений, отображаемых в одном чате (защита от гигантских сессий)."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "package": "npx --yes @vscode/vsce package",
+    "publish:ovsx": "npx --yes ovsx publish -p $OVSX_TOKEN"
+  }
+}
