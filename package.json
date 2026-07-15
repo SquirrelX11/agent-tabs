@@ -1,7 +1,7 @@
 {
   "name": "agent-tabs",
   "displayName": "Agent Tabs",
-  "description": "Все чаты с Claude Code как вкладки браузера — с закладками, поиском и группировкой по проектам. Работает локально.",
+  "description": "Browse your Claude Code chat history as browser-style tabs — with bookmarks, search, and project grouping. 100% local, no telemetry.",
   "version": "0.1.0",
   "publisher": "squirrelx11",
   "license": "MIT",
@@ -43,13 +43,13 @@
     "commands": [
       {
         "command": "agentTabs.open",
-        "title": "Agent Tabs: открыть панель чатов",
+        "title": "Open Chat Panel",
         "category": "Agent Tabs",
         "icon": "$(comment-discussion)"
       },
       {
         "command": "agentTabs.refresh",
-        "title": "Agent Tabs: обновить список сессий",
+        "title": "Refresh Session List",
         "category": "Agent Tabs",
         "icon": "$(refresh)"
       }
@@ -66,12 +66,12 @@
         "agentTabs.projectsDir": {
           "type": "string",
           "default": "",
-          "description": "Путь к папке с сессиями Claude Code. Пусто = ~/.claude/projects"
+          "description": "Folder to read Claude Code sessions from. Empty = ~/.claude/projects"
         },
         "agentTabs.maxMessagesPerChat": {
           "type": "number",
           "default": 800,
-          "description": "Максимум сообщений, отображаемых в одном чате (защита от гигантских сессий)."
+          "description": "Maximum number of messages rendered in a single chat (guards against enormous sessions)."
         }
       }
     }

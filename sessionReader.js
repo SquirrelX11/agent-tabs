@@ -5,12 +5,12 @@ const os = require('os');
 const path = require('path');
 const readline = require('readline');
 
-/** Папка с сессиями Claude Code по умолчанию. */
+/** Default folder holding Claude Code sessions. */
 function defaultProjectsDir() {
   return path.join(os.homedir(), '.claude', 'projects');
 }
 
-/** Достаём читаемый текст из поля content сообщения (строка или массив блоков). */
+/** Pull readable text out of a message's content (a string, or an array of blocks). */
 function extractText(content) {
   if (typeof content === 'string') return content;
   if (!Array.isArray(content)) return '';
@@ -22,7 +22,7 @@ function extractText(content) {
         if (typeof block.text === 'string') parts.push(block.text);
         break;
       case 'image':
-        parts.push('🖼 [изображение]');
+        parts.push('🖼 [image]');
         break;
       case 'tool_use':
         parts.push(`🛠 ${block.name || 'tool'}`);
@@ -36,7 +36,7 @@ function extractText(content) {
         break;
       }
       case 'thinking':
-        // мысли не показываем в ленте
+        // thinking blocks stay out of the transcript
         break;
       default:
         break;
@@ -46,10 +46,10 @@ function extractText(content) {
 }
 
 /**
- * Настоящая ли это реплика пользователя.
- * В JSONL роль user несут ещё и tool_result'ы с вложениями — это пломбинг агента,
- * а не то, что человек напечатал. Реплика считается настоящей только если в ней
- * есть непустой text-блок, не являющийся служебной обёрткой.
+ * Whether this is something the human actually typed.
+ * In the JSONL, the user role also carries tool_results and attachments — that's agent
+ * plumbing, not conversation. A turn counts as real only if it has a non-empty text
+ * block that isn't one of the wrapper tags.
  */
 function hasRealUserText(content) {
   if (typeof content === 'string') return content.trim().length > 0 && !isNoiseText(content);
@@ -59,7 +59,7 @@ function hasRealUserText(content) {
   );
 }
 
-/** Из реплики пользователя берём только то, что он действительно написал. */
+/** Take only what the user actually wrote out of their turn. */
 function extractUserText(content) {
   if (typeof content === 'string') return isNoiseText(content) ? '' : content.trim();
   if (!Array.isArray(content)) return '';
@@ -71,7 +71,7 @@ function extractUserText(content) {
     .trim();
 }
 
-/** Служебные обёртки, которые не стоит показывать как реплики пользователя. */
+/** Wrapper tags that shouldn't surface as user messages. */
 function isNoiseText(text) {
   if (!text) return true;
   const t = text.trimStart();
@@ -86,8 +86,8 @@ function isNoiseText(text) {
 }
 
 /**
- * Быстро читает метаданные одной сессии, не загружая весь файл.
- * Стримит строки с бюджетом байт и останавливается, когда нашёл главное.
+ * Read one session's metadata quickly, without loading the whole file.
+ * Streams lines under a byte budget and stops as soon as it has what it needs.
  */
 function readSessionMeta(filePath) {
   return new Promise((resolve) => {
@@ -112,7 +112,7 @@ function readSessionMeta(filePath) {
       messageCount: 0,
     };
 
-    const BYTE_BUDGET = 512 * 1024; // 512 КБ головы файла хватает для метаданных
+    const BYTE_BUDGET = 512 * 1024; // the first 512 KB is plenty for metadata
     let bytesRead = 0;
     const stream = fs.createReadStream(filePath, { encoding: 'utf8' });
     const rl = readline.createInterface({ input: stream, crlfDelay: Infinity });
@@ -120,7 +120,7 @@ function readSessionMeta(filePath) {
     const finish = () => {
       try { rl.close(); } catch {}
       try { stream.destroy(); } catch {}
-      meta.title = meta.aiTitle || meta.firstPrompt || 'Без названия';
+      meta.title = meta.aiTitle || meta.firstPrompt || 'Untitled';
       resolve(meta);
     };
 
@@ -142,7 +142,7 @@ function readSessionMeta(filePath) {
         }
       }
 
-      // Достаточно данных — можно закончить рано.
+      // Got everything we need — stop early.
       if (meta.aiTitle && meta.firstPrompt && meta.cwd) finish();
       else if (bytesRead > BYTE_BUDGET) finish();
     });
@@ -152,7 +152,7 @@ function readSessionMeta(filePath) {
   });
 }
 
-/** Сканирует папку проектов и возвращает список сессий с метаданными. */
+/** Scan the projects folder and return every session with its metadata. */
 async function listSessions(projectsDir) {
   const dir = projectsDir || defaultProjectsDir();
   let projectDirs = [];
@@ -180,8 +180,8 @@ async function listSessions(projectsDir) {
 }
 
 /**
- * Загружает содержимое одного чата в виде списка реплик.
- * Ограничивает число сообщений, чтобы не подвесить UI на гигантских сессиях.
+ * Load one chat as a list of turns.
+ * Caps the message count so an enormous session can't stall the UI.
  */
 function loadSession(filePath, maxMessages) {
   return new Promise((resolve) => {
@@ -212,17 +212,17 @@ function loadSession(filePath, maxMessages) {
       if (o.type === 'ai-title' && o.aiTitle) meta.aiTitle = o.aiTitle;
 
       if (o.type !== 'user' && o.type !== 'assistant') return;
-      if (o.isSidechain) return; // вложенные под-агенты не мешаем в основную ленту
+      if (o.isSidechain) return; // keep nested sub-agents out of the main transcript
       const msg = o.message;
       if (!msg) return;
-      // Реплики пользователя показываем только настоящие: tool_result'ы и вложения,
-      // которые тоже приходят с ролью user, в ленте не нужны.
+      // Only real user turns: tool_results and attachments also arrive with the user role,
+      // and they don't belong in the transcript.
       if (o.type === 'user' && !hasRealUserText(msg.content)) return;
       const text = o.type === 'user' ? extractUserText(msg.content) : extractText(msg.content);
       if (!text) return;
 
-      // Реплика, состоящая только из вызовов инструментов, рисуется компактным чипом,
-      // а не полноценным пузырём с заголовком.
+      // A turn that is nothing but tool calls renders as a compact chip rather than
+      // a full bubble with a speaker heading.
       const toolOnly = o.type === 'assistant' && text.split('\n').every((l) => l.startsWith('🛠'));
 
       messages.push({

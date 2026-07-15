@@ -31,8 +31,8 @@ function activate(context) {
     vscode.commands.registerCommand('agentTabs.refresh', () => sendSessions())
   );
 
-  // В Extension Development Host (F5) сразу показываем панель — иначе её пришлось бы
-  // каждый раз вызывать из палитры. В обычной установке ждём команду пользователя.
+  // In the Extension Development Host (F5), show the panel right away; otherwise it would
+  // have to be summoned from the palette every run. A normal install waits for the command.
   if (context.extensionMode === vscode.ExtensionMode.Development) {
     openPanel(context);
   }
@@ -68,7 +68,7 @@ function openPanel(context) {
   ].join('; ');
 
   panel.webview.html = `<!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta http-equiv="Content-Security-Policy" content="${csp}">
@@ -119,7 +119,7 @@ async function handleMessage(context, msg) {
       break;
     }
     case 'persist': {
-      // Веб-часть — источник истины по вкладкам/закладкам; сохраняем в globalState.
+      // The webview owns tab/bookmark state; mirror it into globalState so it survives restarts.
       if (Array.isArray(msg.openTabs)) context.globalState.update('openTabs', msg.openTabs);
       if (Array.isArray(msg.bookmarks)) context.globalState.update('bookmarks', msg.bookmarks);
       if (typeof msg.active === 'string') context.globalState.update('activeTab', msg.active);
@@ -141,7 +141,7 @@ async function handleMessage(context, msg) {
           forceNewWindow: true,
         });
       } else {
-        vscode.window.showWarningMessage('Папка проекта недоступна: ' + (session && session.cwd));
+        vscode.window.showWarningMessage('Project folder is unavailable: ' + (session && session.cwd));
       }
       break;
     }
@@ -175,7 +175,7 @@ function setupWatchers() {
     });
     watchers.push(w);
   } catch {
-    // recursive watch не везде поддерживается — тихо игнорируем, есть кнопка «Обновить».
+    // Recursive watch isn't supported everywhere; fall back quietly — the Refresh button covers it.
   }
 }
 

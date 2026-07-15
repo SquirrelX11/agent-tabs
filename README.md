@@ -1,7 +1,5 @@
 # Agent Tabs
 
-**English** · [Русский](README.ru.md)
-
 Your **Claude Code** chats, at the top, as **browser-style tabs** — with a bookmarks bar, search, and grouping by project.
 
 Reads session history straight from `~/.claude/projects/*/*.jsonl`.

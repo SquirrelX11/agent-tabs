@@ -15,7 +15,7 @@
 
   const app = document.getElementById('app');
 
-  // ---------- утилиты ----------
+  // ---------- helpers ----------
   function esc(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
@@ -23,14 +23,14 @@
   function timeAgo(ms) {
     if (!ms) return '';
     const diff = (Date.now() - ms) / 1000;
-    if (diff < 60) return 'только что';
-    if (diff < 3600) return Math.floor(diff / 60) + ' мин';
-    if (diff < 86400) return Math.floor(diff / 3600) + ' ч';
-    if (diff < 86400 * 30) return Math.floor(diff / 86400) + ' дн';
-    return new Date(ms).toLocaleDateString('ru-RU');
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+    if (diff < 86400 * 30) return Math.floor(diff / 86400) + 'd';
+    return new Date(ms).toLocaleDateString();
   }
   function projectName(cwd) {
-    if (!cwd) return 'без проекта';
+    if (!cwd) return 'no project';
     const parts = cwd.split('/').filter(Boolean);
     return parts[parts.length - 1] || cwd;
   }
@@ -46,7 +46,7 @@
     });
   }
 
-  // ---------- действия ----------
+  // ---------- actions ----------
   function openSession(id) {
     if (!state.openTabs.includes(id)) state.openTabs.push(id);
     state.active = id;
@@ -71,13 +71,13 @@
     if (idx >= 0) state.bookmarks.splice(idx, 1);
     else {
       const s = sessionById(id) || (state.contents[id] && state.contents[id].meta) || { id, title: id };
-      state.bookmarks.push({ id, title: s.title || 'Чат' });
+      state.bookmarks.push({ id, title: s.title || 'Chat' });
     }
     persist();
     render();
   }
 
-  // ---------- рендер ----------
+  // ---------- render ----------
   function render() {
     app.innerHTML = '';
     app.appendChild(renderTabbar());
@@ -99,7 +99,7 @@
       tab.title = s.title || id;
       tab.innerHTML =
         `<span class="favicon">${isBookmarked(id) ? '★' : '💬'}</span>` +
-        `<span class="label">${esc(s.title || 'Чат')}</span>` +
+        `<span class="label">${esc(s.title || 'Chat')}</span>` +
         `<span class="close" data-close="${esc(id)}">✕</span>`;
       tab.addEventListener('click', (e) => {
         if (e.target.dataset && e.target.dataset.close) { closeTab(id); return; }
@@ -112,7 +112,7 @@
     }
     const nt = document.createElement('div');
     nt.className = 'tab newtab';
-    nt.title = 'Все чаты — слева';
+    nt.title = 'All chats are listed on the left';
     nt.textContent = '＋';
     nt.addEventListener('click', () => {
       const input = document.querySelector('.sidebar input');
@@ -127,12 +127,12 @@
     bar.className = 'bookmarks';
     const label = document.createElement('span');
     label.className = 'bm-label';
-    label.textContent = '★ Закладки:';
+    label.textContent = '★ Bookmarks:';
     bar.appendChild(label);
     if (state.bookmarks.length === 0) {
       const e = document.createElement('span');
       e.className = 'empty';
-      e.textContent = 'пусто — нажмите ★ в чате, чтобы добавить';
+      e.textContent = 'none yet — press ★ in a chat to pin it here';
       bar.appendChild(e);
       return bar;
     }
@@ -158,13 +158,13 @@
     search.className = 'search';
     const input = document.createElement('input');
     input.type = 'text';
-    input.placeholder = 'Поиск по чатам…';
+    input.placeholder = 'Search chats…';
     input.value = state.filter;
     input.addEventListener('input', () => { state.filter = input.value; renderListOnly(); });
     const refresh = document.createElement('button');
     refresh.className = 'btn';
     refresh.textContent = '⟳';
-    refresh.title = 'Обновить';
+    refresh.title = 'Refresh';
     refresh.addEventListener('click', () => vscode.postMessage({ type: 'refresh' }));
     search.appendChild(input);
     search.appendChild(refresh);
@@ -194,7 +194,7 @@
       );
     });
 
-    // группируем по проекту
+    // group by project
     const groups = {};
     for (const s of filtered) {
       const key = projectName(s.cwd);
@@ -204,7 +204,7 @@
     if (keys.length === 0) {
       const empty = document.createElement('div');
       empty.className = 'session-group-title';
-      empty.textContent = 'Ничего не найдено';
+      empty.textContent = 'No matches';
       list.appendChild(empty);
       return;
     }
@@ -217,7 +217,7 @@
         const item = document.createElement('div');
         item.className = 'session-item' + (state.openTabs.includes(s.id) ? ' open' : '');
         item.innerHTML =
-          `<div class="title">${isBookmarked(s.id) ? '★ ' : ''}${esc(s.title || 'Без названия')}</div>` +
+          `<div class="title">${isBookmarked(s.id) ? '★ ' : ''}${esc(s.title || 'Untitled')}</div>` +
           `<div class="meta"><span>${timeAgo(s.mtime)}</span>` +
           (s.gitBranch ? `<span>⎇ ${esc(s.gitBranch)}</span>` : '') + `</div>`;
         item.title = s.firstPrompt || s.title || '';
@@ -234,8 +234,8 @@
     if (!state.active) {
       const ph = document.createElement('div');
       ph.className = 'placeholder';
-      ph.innerHTML = `<div class="big">💬</div><div>Выберите чат слева — он откроется как вкладка.</div>` +
-        `<div style="font-size:12px">Нажмите ★, чтобы добавить в закладки.</div>`;
+      ph.innerHTML = `<div class="big">💬</div><div>Pick a chat on the left — it opens as a tab.</div>` +
+        `<div style="font-size:12px">Press ★ to bookmark it.</div>`;
       content.appendChild(ph);
       return content;
     }
@@ -243,17 +243,17 @@
     const data = state.contents[state.active];
     const meta = (data && data.meta) || sessionById(state.active) || { id: state.active };
 
-    // адресная строка
+    // address bar
     const addr = document.createElement('div');
     addr.className = 'addressbar';
     const star = document.createElement('span');
     star.className = 'star-btn' + (isBookmarked(state.active) ? ' on' : '');
     star.textContent = isBookmarked(state.active) ? '★' : '☆';
-    star.title = 'В закладки';
+    star.title = 'Bookmark';
     star.addEventListener('click', () => toggleBookmark(state.active));
     const titleEl = document.createElement('span');
     titleEl.className = 'title';
-    titleEl.textContent = meta.title || 'Чат';
+    titleEl.textContent = meta.title || 'Chat';
     const crumbs = document.createElement('span');
     crumbs.className = 'crumbs';
     crumbs.innerHTML =
@@ -264,13 +264,13 @@
     spacer.className = 'spacer';
     const openFolder = document.createElement('span');
     openFolder.className = 'act';
-    openFolder.textContent = '↗ проект';
-    openFolder.title = 'Открыть папку проекта в новом окне';
+    openFolder.textContent = '↗ project';
+    openFolder.title = 'Open the project folder in a new window';
     openFolder.addEventListener('click', () => vscode.postMessage({ type: 'openCwd', id: state.active }));
     const revealBtn = document.createElement('span');
     revealBtn.className = 'act';
-    revealBtn.textContent = '⧉ файл';
-    revealBtn.title = 'Показать .jsonl в Finder';
+    revealBtn.textContent = '⧉ file';
+    revealBtn.title = 'Reveal the .jsonl in your file manager';
     revealBtn.addEventListener('click', () => vscode.postMessage({ type: 'revealInOS', id: state.active }));
 
     addr.append(star, titleEl, crumbs, spacer, openFolder, revealBtn);
@@ -279,7 +279,7 @@
     if (!data) {
       const ph = document.createElement('div');
       ph.className = 'placeholder';
-      ph.innerHTML = `<div>Загрузка…</div>`;
+      ph.innerHTML = `<div>Loading…</div>`;
       content.appendChild(ph);
       return content;
     }
@@ -287,15 +287,15 @@
     const msgs = document.createElement('div');
     msgs.className = 'messages';
     if (data.messages.length === 0) {
-      msgs.innerHTML = `<div class="placeholder">В этой сессии нет текстовых сообщений.</div>`;
+      msgs.innerHTML = `<div class="placeholder">This session has no text messages.</div>`;
     }
     for (let i = 0; i < data.messages.length; i++) {
       const m = data.messages[i];
       const el = document.createElement('div');
 
       if (m.kind === 'tool') {
-        // Идущие подряд вызовы инструментов собираем в одну строку чипов,
-        // иначе каждый Bash занимал бы отдельный ряд.
+        // Collapse a run of consecutive tool calls into one row of chips;
+        // otherwise every Bash would take a row of its own.
         const chips = [];
         while (i < data.messages.length && data.messages[i].kind === 'tool') {
           chips.push(...data.messages[i].text.split('\n'));
@@ -307,7 +307,7 @@
       } else {
         el.className = 'msg ' + (m.role === 'user' ? 'user' : 'assistant');
         el.innerHTML =
-          `<div class="who">${m.role === 'user' ? '🧑 Вы' : '🤖 Claude'}</div>` +
+          `<div class="who">${m.role === 'user' ? '🧑 You' : '🤖 Claude'}</div>` +
           `<div class="bubble">${esc(m.text)}</div>`;
       }
       msgs.appendChild(el);
@@ -317,13 +317,13 @@
     if (data.truncated) {
       const tr = document.createElement('div');
       tr.className = 'truncated';
-      tr.textContent = 'Показаны первые сообщения — сессия очень длинная (лимит в настройках agentTabs.maxMessagesPerChat).';
+      tr.textContent = 'Showing the first messages only — this session is very long (cap: agentTabs.maxMessagesPerChat).';
       content.appendChild(tr);
     }
     return content;
   }
 
-  // ---------- сообщения от расширения ----------
+  // ---------- messages from the extension ----------
   window.addEventListener('message', (e) => {
     const msg = e.data;
     switch (msg.type) {
