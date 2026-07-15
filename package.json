@@ -2,7 +2,7 @@
   "name": "agent-tabs",
   "displayName": "Agent Tabs",
   "description": "Browse your Claude Code chat history as browser-style tabs — with bookmarks, search, and project grouping. 100% local, no telemetry.",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "publisher": "squirrelx11",
   "license": "MIT",
   "author": {
@@ -45,16 +45,16 @@
         "command": "agentTabs.quickOpen",
         "title": "Go to Chat…",
         "category": "Agent Tabs",
-        "icon": {
-          "light": "resources/agent-tabs-light.svg",
-          "dark": "resources/agent-tabs-dark.svg"
-        }
+        "icon": "$(search)"
       },
       {
         "command": "agentTabs.open",
         "title": "Open Chat Panel",
         "category": "Agent Tabs",
-        "icon": "$(comment-discussion)"
+        "icon": {
+          "light": "resources/agent-tabs-light.svg",
+          "dark": "resources/agent-tabs-dark.svg"
+        }
       },
       {
         "command": "agentTabs.refresh",
@@ -77,7 +77,7 @@
       ],
       "editor/title": [
         {
-          "command": "agentTabs.quickOpen",
+          "command": "agentTabs.open",
           "group": "navigation@100"
         }
       ]
@@ -112,12 +112,12 @@
     },
     "keybindings": [
       {
-        "command": "agentTabs.quickOpen",
+        "command": "agentTabs.open",
         "key": "ctrl+alt+a",
         "mac": "cmd+alt+a"
       },
       {
-        "command": "agentTabs.open",
+        "command": "agentTabs.quickOpen",
         "key": "ctrl+alt+shift+a",
         "mac": "cmd+alt+shift+a"
       }

@@ -37,8 +37,8 @@ function activate(context) {
   // One-click way in that's always on screen.
   const status = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right, 100);
   status.text = '$(comment-discussion) Chats';
-  status.tooltip = 'Agent Tabs — pick a Claude Code chat';
-  status.command = 'agentTabs.quickOpen';
+  status.tooltip = 'Agent Tabs — your Claude Code chats as tabs';
+  status.command = 'agentTabs.open';
   status.show();
   context.subscriptions.push(status);
 
